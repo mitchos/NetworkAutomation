@@ -1,45 +1,43 @@
-#setup errorr handling
+##setup errorr handling
 $ErrorActionPreference ="SilentlyContinue"
 
-#import the SSH module
+##import the SSH module
 Import-Module SSH-Sessions
 
-#setup our filename
-$time ="$(get-date -f yyyy-MM-dd)"
-$filename ="config"
-$ext =".txt"
 
-# Change the storage location of the configs below
-$filepath ="C:\Audit\Configs\"
 
 ################################################################
 ################# Must complete this section ###################
 ################################################################
 
-# Default username and password
-$username =""
-$password =""
-# Connection type can be 'telnet' or 'ssh'
-$connectionType ="telnet"
-# Get device IPs from *.csv file( named "hosts.csv").
+
+
+#////////////////////// Host Settings //////////////////////////
 $DeviceList = Import-Csv C:\Audit\hosts.csv  
 
 
-$termlength = "term len 0" #Useful for older consoles that have line display limitations
-$enable = "en" #useful for appliances like Cisco switches that have an 'enable' command mode
-$enablepassword = ""
-$commandDelay = 1000
+#////////////////// Output File Settings ///////////////////////
 
-# insert each command that you need to run for each device in this
-# array
+$time ="$(get-date -f yyyy-MM-dd)" ## get the date 
+$filename ="config" ## optional text to add to filename
+$ext =".txt" ## extension for the filename
+$filepath ="C:\Audit\Configs\" ## location to store the output files
+
+
+#////////////////// Connection Settings ////////////////////////
+
+$connectionType ="telnet" ## connection type can be 'telnet' or 'ssh'
+$username ="" ## username for device logins
+$password ="" ## password for device logins
+$termlength = "term len 0" ## useful for older consoles that have line display limitations
+$enable = "en" ## useful for appliances like cisco switches that have an 'enable' command mode
+$enablepassword = "" ## add enable password if there is one
+$commandDelay = 1000 ## add a delay between commands
+
+#////////////////// Command Settings ////////////////////////
 $runCommands = ("show run","show ip int brie")
 
-# create array to store failed connections
-$hostsWithError = @()
 
-################################################################
-
-#---------------------------------------------------------------
 
 ################################################################
 ##################### Optional Section #########################
@@ -75,25 +73,29 @@ $p1 =""
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # DON'T ALTER THE CODE BELOW
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-## Read output from a remote host
+## create array to store failed connections
+$hostsWithError = @()
+
+## read output from remote host
 function GetOutput
 {
-  ## Create a buffer to receive the response
+  ## buffer to receive the response
   $buffer = new-object System.Byte[] 1024
   $encoding = new-object System.Text.AsciiEncoding
 
   $outputBuffer = ""
   $foundMore = $false
 
-  ## Read all the data available from the stream, writing it to the
+  ## read all data available from the stream, writing it to the
   ## output buffer when done.
   do
   {
-    ## Allow data to buffer for a bit
+    ## allow data to buffer for a bit
     start-sleep -m 1000
 
-    ## Read what data is available
+    ## read what data is available
     $foundmore = $false
     $stream.ReadTimeout = 1000
 
@@ -122,7 +124,7 @@ function GetOutput
 
     function Main
     {
-      ## Open the socket, and connect to the computer on the specified port
+      ## open the socket, and connect to the device on the specified port
 
       write-host "Connecting to $hostname on port $port"
       try
@@ -141,7 +143,7 @@ function GetOutput
 
         $writer = new-object System.IO.StreamWriter $stream
 
-        ## Receive the output that has buffered so far
+        ## receive the output that has buffered so far
         $SCRIPT:output += GetOutput
 
         $writer.WriteLine($username)
@@ -159,10 +161,11 @@ function GetOutput
         $writer.WriteLine($enablepassword)
         $writer.Flush()
         Start-Sleep -m $commandDelay
+        ## start executing our commands
         foreach ($command in $runCommands)
         {
             echo "Executing $command"
-            $writer.WriteLine($command) #executes commands from runCommands array
+            $writer.WriteLine($command) ## executes commands from runCommands array
             $writer.Flush()
             Start-Sleep -m $commandDelay
         }
@@ -173,7 +176,8 @@ function GetOutput
         $stream.Close()
 
         try{
-            $output | Out-File ("$filepath$hostname-$filename-$time$ext") #Change this to suit your environment
+            ## set our filename - NEED TO MOVE THIS TO THE SETTINGS AT TOP
+            $output | Out-File ("$filepath$hostname-$filename-$time$ext") 
             echo "Config saved successfully"
         }
         catch{
@@ -186,7 +190,7 @@ function GetOutput
 }
 
 
-#Loop through each host/IP and get the running config
+## loop through each host/IP and get the running config
 switch ($connectionType)
 {
     ssh {
@@ -195,18 +199,18 @@ switch ($connectionType)
         {
             $hostname = $IP_add.IPAddress; 
             try{
-                $connectionStatus = New-SshSession $hostname -Username $username -Password "$password" -ErrorAction "SilentlyContinue" #start session
+                $connectionStatus = New-SshSession $hostname -Username $username -Password "$password" -ErrorAction "SilentlyContinue" ## start session
             }
             Catch{
                 $ErrorMessage = $_.Exception.Message
                 $FailedItem = $_.Exception.ItemName
             }
-            $Results = Invoke-Sshcommand -InvokeOnAll -Command "$c1" | Out-File "$filepath$hostname-$filename-$time$ext" #save results
-            Remove-SshSession -computername $hostname # close session
+            $Results = Invoke-Sshcommand -InvokeOnAll -Command "$c1" | Out-File "$filepath$hostname-$filename-$time$ext" ## save results
+            Remove-SshSession -computername $hostname ## close session
         }
     }
     telnet {
-        # run the Telnet function
+        ## run the Telnet function
         $port = 23
         foreach ($IP_add in $Devicelist)
         {
@@ -232,7 +236,7 @@ Write-Host "Press any key to continue ..."
 
 $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # DON'T ALTER THE CODE ABOVE
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
