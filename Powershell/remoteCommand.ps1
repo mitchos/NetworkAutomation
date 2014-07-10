@@ -112,7 +112,7 @@ function GetOutput
                 {
                     $foundmore = $true ## yes, there is
                     $outputBuffer += ($encoding.GetString($buffer, 0, $read)) ## add string to output
-                    echo $outputBuffer ## added as a test to see how the buffer looks at each step
+                    
                 }
             } 
             catch 
@@ -315,12 +315,3 @@ $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 # NO USER TUNABLE SETTINGS
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-# Uncomment and add extra lines for devices with non-standard username/password
-# New-SshSession $d1 -Username $u1 -Password "$p1" #start session
-# New-SshSession $d2 -Username $u2 -Password "$p2" #start session
-# $Results = Invoke-Sshcommand -InvokeOnAll -Command "$c1" | Out-File "$filepath$filename-$time$ext" #save results
-# Remove-SshSession -RemoveAll
-
-# Exit PowerShell
-# exit
